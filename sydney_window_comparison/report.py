@@ -156,7 +156,6 @@ def report(results_dir: Path) -> dict[str, Any]:
     pd.DataFrame(paired).to_csv(results_dir / "paired-vs-60s.csv", index=False)
     figure, axis = plt.subplots(figsize=(8, 5))
     axis.plot([row["window_seconds"] for row in curve], [row["macro_f1_mean"] for row in curve], marker="o")
-    axis.axvline(baseline_window, color="gray", linestyle="--", linewidth=1)
     axis.set(xlabel="Window size (seconds)", ylabel="Macro F1 (pooled held-out windows)", xticks=list(WINDOWS), ylim=(0, 1))
     axis.grid(alpha=0.3)
     figure.tight_layout()

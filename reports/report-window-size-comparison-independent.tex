@@ -1,5 +1,6 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=25mm]{geometry}
+\usepackage{graphicx}
 
 \title{Window Length and Sydney Transport Mode Classification}
 \author{}
@@ -46,8 +47,7 @@ participants and tested on the seventh. The XGBoost hyperparameters were
 selected on a separate NOR-TMD dataset and remained fixed here. Each fold was
 trained only on Sydney windows, using class-balanced training weights.
 Seeds 42, 43, and 44 gave 36 length-and-seed evaluations and 252 model fits
-across the seven folds. No held-out participant contributed training windows
-to its fold.
+across the seven folds.
 
 Within each length and seed, predictions from all seven held-out folds were
 pooled. Macro F1 was calculated as the mean of bus, car, and train F1;
@@ -62,8 +62,17 @@ scores nor measures from independent journeys.
 Mean macro F1 rose from 0.596 at 20 seconds to 0.693 at 120 seconds, then
 varied from 0.662 to 0.682 across the remaining lengths. Balanced accuracy
 followed the same broad pattern and reached 0.691 at 120 seconds.
-Table~\ref{tab:window-grid} showed the complete grid, including the decline in
-retained window counts as length increased.
+Figure~\ref{fig:window-curve} showed the macro F1 trend. Table~\ref{tab:window-grid}
+showed the complete grid, including the decline in retained window counts as
+length increased.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\linewidth]{../results/window-curve.png}
+\caption{Mean macro F1 on pooled held-out Sydney windows across three seeds.
+Each length used the same 149 sessions, while retained window counts differed.}
+\label{fig:window-curve}
+\end{figure}
 
 \begin{table}[htbp]
 \centering

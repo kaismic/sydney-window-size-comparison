@@ -31,7 +31,7 @@ $env:ALL_TMD_DATA_DIR = 'D:\tmd-data'  # directory containing downloaded_session
 
 `results/window-curve.png` plots macro F1 against window size; balanced accuracy remains in the CSV and JSON results. The detailed, standalone LaTeX report is `reports/report-window-size-comparison.tex`. To compile it with `pdflatex`, run `cd reports` followed by `pdflatex report-window-size-comparison.tex` twice for references. Its content is in `reports/window-size-comparison-section.tex`, which starts with `\subsection{Comprehensive Window Length Comparison}` and can be inserted under the Results section of `../../reports/report-8.tex`. When compiling that parent report from its `reports/` directory, add `\graphicspath{{../ml/sydney-window-size-comparison/results/}}` and `\input{../ml/sydney-window-size-comparison/reports/window-size-comparison-section.tex}` at the intended location. The parent already loads `graphicx`.
 
-`reports/report-window-size-comparison-independent.tex` is a separate, self-contained report focused on the full window-length grid. It includes its own methods, results, and limitations, with no input from the parent report and no baseline-relative evaluation. Compile it from `reports/` with `pdflatex report-window-size-comparison-independent.tex` twice for references.
+`reports/report-window-size-comparison-independent.tex` is a separate report focused on the full window-length grid. It includes its own methods, results, and limitations, with no input from the parent report and no baseline-relative evaluation. It includes `results/window-curve.png`, so keep that image at its relative path. Compile the report from `reports/` with `pdflatex report-window-size-comparison-independent.tex` twice for references.
 
 ## Completed comparison
 
