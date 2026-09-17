@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "v2_commit": "6f8e77d7d179fde3fa664951957f63b51d634128",
+  "source_snapshot_digest": "8931f5b287838320e9173639d4023da19f34271b6b8abdfdc63691102674124c",
+  "windows_seconds": [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240],
+  "minimum_session_seconds": 240,
+  "maximum_session_seconds": null,
+  "seeds": [42, 43, 44],
+  "labels": {"bus": 0, "car": 1, "train": 2},
+  "baseline_window_seconds": 60,
+  "bootstrap_iterations": 5000,
+  "analysis_seed": 20260903
+}

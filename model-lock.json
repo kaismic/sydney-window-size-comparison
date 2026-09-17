@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "model_family": "xgboost",
+  "params": {
+    "family": "xgboost",
+    "n_estimators": 1100,
+    "learning_rate": 0.075673979781048,
+    "max_depth": 7,
+    "min_child_weight": 5.506017926897997,
+    "subsample": 0.6211191080556295,
+    "colsample_bytree": 0.5018274528628044,
+    "gamma": 0.6116122189730158,
+    "reg_alpha": 0.5061496695979651,
+    "reg_lambda": 5.979330666247829
+  },
+  "feature_names": [
+    "accelerometer#mean",
+    "accelerometer#standard_deviation",
+    "accelerometer#range",
+    "accelerometer#minimum",
+    "gyroscope#mean",
+    "gyroscope#standard_deviation",
+    "gyroscope#range",
+    "gyroscope#minimum",
+    "magnetometer#standard_deviation",
+    "magnetometer#range",
+    "magnetometer#minimum"
+  ],
+  "tuning_dataset": "nor-tmd",
+  "sydney_rows_used": 0,
+  "source_feature_digest": "c7310a47ae4fc84b2e2fdd47b57f6542074f",
+  "selection_metric": "macro_f1",
+  "cross_validation_score": 0.5324284643253392,
+  "tuning_run_id": "7978ab3481de47fa99630328666095f3",
+  "dependency_versions": {
+    "numpy": "2.5.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.3.0",
+    "optuna": "4.9.0",
+    "mlflow": "3.15.2"
+  },
+  "code_commit": "fd393230e1b18eaf4269810096304c40495b619d",
+  "lock_digest": "28c23a451a93cb712553d48b07c881b43152f7e4e303932392bd44658eeff96d"
+}

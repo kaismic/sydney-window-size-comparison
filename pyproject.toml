@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sydney-window-size-comparison"
+version = "0.1.0"
+description = "Frozen Sydney LOPO comparison of transport classification window sizes."
+requires-python = ">=3.12"
+dependencies = [] # Install the adjacent pinned checkout's requirements.lock before running.
+
+[project.optional-dependencies]
+test = ["pytest>=9"]
+
+[tool.setuptools.packages.find]
+include = ["sydney_window_comparison*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
