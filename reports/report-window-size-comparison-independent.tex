@@ -9,66 +9,67 @@
 \maketitle
 
 \begin{abstract}
-This study compares 12 window lengths from 20 to 240 seconds for Sydney bus,
-car, and train classification. A fixed XGBoost protocol evaluates the same
+This study compared 12 window lengths from 20 to 240 seconds for Sydney bus,
+car, and train classification. A fixed XGBoost protocol evaluated the same
 149 sessions and seven held-out participants at every length. Mean pooled
-macro F1 across three seeds peaks at 0.693 for 120-second windows. The result
-is descriptive: the windows overlap, their counts differ by length, and the
+macro F1 across three seeds peaked at 0.693 for 120-second windows. The result
+was descriptive: the windows overlapped, their counts differed by length, and the
 length with the highest score was identified on this cohort.
 \end{abstract}
 
 \section{Study design}
 \subsection{Cohort}
-The source is a frozen 166-session Sydney snapshot. Bus, car, and train
-recordings with snapshot duration of at least 240 seconds are candidates;
-there is no upper-duration limit. Event-data checks and feature-quality rules
-require each included session to have at least one valid window at every
-tested length. The resulting common cohort has 149 sessions from seven
+The source was a frozen 166-session Sydney snapshot. Bus, car, and train
+recordings with snapshot duration of at least 240 seconds were candidates;
+there was no upper-duration limit. Event-data checks and feature-quality rules
+required each included session to have at least one valid window at every
+tested length. The resulting common cohort had 149 sessions from seven
 participants: 38 bus, 66 car, and 45 train. Session identities and
-participant folds remain the same across lengths. Selection for long,
-quality-surviving sessions limits the population to which these estimates
-apply.
+participant folds remained the same across lengths. Selection for long,
+quality-surviving sessions limited the population to which these estimates
+applied.
 
 \subsection{Windows and features}
-Window lengths are 20, 40, \ldots, 240 seconds. Each advances by half its
+Window lengths were 20, 40, \ldots, 240 seconds. Each advanced by half its
 length, giving 50\% overlap within a session. For a window of length $W$
-seconds, the feature pipeline requires at least $30W$ accelerometer, $4W$
+seconds, the feature pipeline required at least $30W$ accelerometer, $4W$
 gyroscope, and $2W$ magnetometer samples. A required sensor stream with a
-consecutive-sample gap over 500 ms causes rejection. The fixed 11-feature
-vector contains mean, standard deviation, range, and minimum of
+consecutive-sample gap over 500 ms caused rejection. The fixed 11-feature
+vector contained mean, standard deviation, range, and minimum of
 accelerometer and gyroscope magnitudes, plus standard deviation, range, and
 minimum of magnetometer magnitude. Sensor inputs, feature definitions,
-quality rules, and overlap fraction are held fixed across lengths.
+quality rules, and overlap fraction were held fixed across lengths.
 
 \subsection{Training and scoring}
-For each length, leave-one-participant-out evaluation trains on six
-participants and tests on the seventh. The XGBoost hyperparameters were
-selected on a separate NOR-TMD dataset and remain fixed here. Each fold is
+For each length, leave-one-participant-out evaluation trained on six
+participants and tested on the seventh. The XGBoost hyperparameters were
+selected on a separate NOR-TMD dataset and remained fixed here. Each fold was
 trained only on Sydney windows, using class-balanced training weights.
-Seeds 42, 43, and 44 give 36 length-and-seed evaluations and 252 model fits
-across the seven folds. No held-out participant contributes training windows
+Seeds 42, 43, and 44 gave 36 length-and-seed evaluations and 252 model fits
+across the seven folds. No held-out participant contributed training windows
 to its fold.
 
-Within each length and seed, predictions from all seven held-out folds are
-pooled. Macro F1 is the mean of bus, car, and train F1; balanced accuracy is
-the mean of their recalls. Reported scores are means of the three seed-level
-pooled metrics. Each session is tested once per seed and length, but shorter
-lengths produce more overlapping windows. Pooled scores therefore weight
-sessions by their retained window counts. They are neither participant-equal
+Within each length and seed, predictions from all seven held-out folds were
+pooled. Macro F1 was calculated as the mean of bus, car, and train F1;
+balanced accuracy was calculated as the mean of their recalls. Reported scores
+were means of the three seed-level pooled metrics. Each session was tested
+once per seed and length, but shorter lengths produced more overlapping
+windows. Pooled scores therefore weighted sessions by their retained window
+counts. They were neither participant-equal
 scores nor measures from independent journeys.
 
 \section{Results}
-Mean macro F1 rises from 0.596 at 20 seconds to 0.693 at 120 seconds, then
-varies from 0.662 to 0.682 across the remaining lengths. Balanced accuracy
-follows the same broad pattern and reaches 0.691 at 120 seconds. Table~\ref{tab:window-grid}
-shows the complete grid, including the decline in retained window counts as
-length increases.
+Mean macro F1 rose from 0.596 at 20 seconds to 0.693 at 120 seconds, then
+varied from 0.662 to 0.682 across the remaining lengths. Balanced accuracy
+followed the same broad pattern and reached 0.691 at 120 seconds.
+Table~\ref{tab:window-grid} showed the complete grid, including the decline in
+retained window counts as length increased.
 
 \begin{table}[htbp]
 \centering
 \small
 \caption{Mean pooled held-out scores across three seeds on the common
-149-session cohort. Window counts are also means across seeds.}
+149-session cohort. Window counts were also means across seeds.}
 \label{tab:window-grid}
 \begin{tabular}{rrrr}
 \hline
@@ -90,10 +91,10 @@ Window (s) & Mean windows & Macro F1 & Balanced accuracy \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:window-classes} shows class F1 at the shortest length, the
-observed peak, and the longest length. Bus is the most difficult class at
-120 seconds despite its improvement across the grid. Train F1 decreases at
-the longest length. These patterns are descriptive and do not establish
+Table~\ref{tab:window-classes} showed class F1 at the shortest length, the
+observed peak, and the longest length. Bus was the most difficult class at
+120 seconds despite its improvement across the grid. Train F1 decreased at
+the longest length. These patterns were descriptive and did not establish
 which aspect of longer temporal context caused the changes.
 
 \begin{table}[htbp]
@@ -113,18 +114,18 @@ Window (s) & Bus F1 & Car F1 & Train F1 \\
 \end{table}
 
 \section{Interpretation and limitations}
-The 120-second length has the highest observed mean macro F1 in this grid.
-It requires 120 seconds of sensor history for a first full-window prediction
-and advances in 60-second steps. No on-device latency, energy use, or
-transition-detection delay was measured, so the operational trade-off cannot
-be quantified from these scores.
+The 120-second length had the highest observed mean macro F1 in this grid.
+It required 120 seconds of sensor history for a first full-window prediction
+and advanced in 60-second steps. No on-device latency, energy use, or
+transition-detection delay was measured, so the operational trade-off could
+not be quantified from these scores.
 
 The seven participants, class concentration, shared sessions across lengths,
-and window-level pooling limit generalization beyond this cohort. Feature
+and window-level pooling limited generalization beyond this cohort. Feature
 definitions were informed by earlier Sydney exploration, although model
 hyperparameters were selected on separate data. The peak was selected after
-examining all 12 lengths; it should not be treated as a confirmed optimum.
-An independent participant cohort with the length fixed in advance is needed
-to assess whether the observed peak persists.
+examining all 12 lengths; it did not establish a confirmed optimum. No
+independent participant cohort with the length fixed in advance was available
+to assess whether the observed peak persisted.
 
 \end{document}
