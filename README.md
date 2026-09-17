@@ -29,7 +29,7 @@ $env:ALL_TMD_DATA_DIR = 'D:\tmd-data'  # directory containing downloaded_session
 
 `results/window-curve.csv`, `per-class.csv`, `paired-vs-60s.csv`, `window-curve.png`, `paired-vs-60s.png`, and `study-summary.json` are compact deliverables. The paired 95% intervals resample seeds, participants, and sessions with the same draws for each window and the 60-second baseline. Scores are pooled over windows, so window counts differ by size even though session membership is fixed.
 
-`results/window-curve.png` plots macro F1 against window size; balanced accuracy remains in the CSV and JSON results. The short LaTeX report is `reports/report-window-size-comparison.tex`. To compile it with `pdflatex`, run `cd reports` followed by `pdflatex report-window-size-comparison.tex` so both figures resolve from `../results/`.
+`results/window-curve.png` plots macro F1 against window size; balanced accuracy remains in the CSV and JSON results. The detailed, standalone LaTeX report is `reports/report-window-size-comparison.tex`. To compile it with `pdflatex`, run `cd reports` followed by `pdflatex report-window-size-comparison.tex` twice for references. Its content is in `reports/window-size-comparison-section.tex`, which starts with `\subsection{Comprehensive Window Length Comparison}` and can be inserted under the Results section of `../../reports/report-8.tex`. When compiling that parent report from its `reports/` directory, add `\graphicspath{{../ml/sydney-window-size-comparison/results/}}` and `\input{../ml/sydney-window-size-comparison/reports/window-size-comparison-section.tex}` at the intended location. The parent already loads `graphicx`.
 
 ## Completed comparison
 
