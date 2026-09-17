@@ -1,0 +1,130 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+
+\title{Window Length and Sydney Transport Mode Classification}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This study compares 12 window lengths from 20 to 240 seconds for Sydney bus,
+car, and train classification. A fixed XGBoost protocol evaluates the same
+149 sessions and seven held-out participants at every length. Mean pooled
+macro F1 across three seeds peaks at 0.693 for 120-second windows. The result
+is descriptive: the windows overlap, their counts differ by length, and the
+length with the highest score was identified on this cohort.
+\end{abstract}
+
+\section{Study design}
+\subsection{Cohort}
+The source is a frozen 166-session Sydney snapshot. Bus, car, and train
+recordings with snapshot duration of at least 240 seconds are candidates;
+there is no upper-duration limit. Event-data checks and feature-quality rules
+require each included session to have at least one valid window at every
+tested length. The resulting common cohort has 149 sessions from seven
+participants: 38 bus, 66 car, and 45 train. Session identities and
+participant folds remain the same across lengths. Selection for long,
+quality-surviving sessions limits the population to which these estimates
+apply.
+
+\subsection{Windows and features}
+Window lengths are 20, 40, \ldots, 240 seconds. Each advances by half its
+length, giving 50\% overlap within a session. For a window of length $W$
+seconds, the feature pipeline requires at least $30W$ accelerometer, $4W$
+gyroscope, and $2W$ magnetometer samples. A required sensor stream with a
+consecutive-sample gap over 500 ms causes rejection. The fixed 11-feature
+vector contains mean, standard deviation, range, and minimum of
+accelerometer and gyroscope magnitudes, plus standard deviation, range, and
+minimum of magnetometer magnitude. Sensor inputs, feature definitions,
+quality rules, and overlap fraction are held fixed across lengths.
+
+\subsection{Training and scoring}
+For each length, leave-one-participant-out evaluation trains on six
+participants and tests on the seventh. The XGBoost hyperparameters were
+selected on a separate NOR-TMD dataset and remain fixed here. Each fold is
+trained only on Sydney windows, using class-balanced training weights.
+Seeds 42, 43, and 44 give 36 length-and-seed evaluations and 252 model fits
+across the seven folds. No held-out participant contributes training windows
+to its fold.
+
+Within each length and seed, predictions from all seven held-out folds are
+pooled. Macro F1 is the mean of bus, car, and train F1; balanced accuracy is
+the mean of their recalls. Reported scores are means of the three seed-level
+pooled metrics. Each session is tested once per seed and length, but shorter
+lengths produce more overlapping windows. Pooled scores therefore weight
+sessions by their retained window counts. They are neither participant-equal
+scores nor measures from independent journeys.
+
+\section{Results}
+Mean macro F1 rises from 0.596 at 20 seconds to 0.693 at 120 seconds, then
+varies from 0.662 to 0.682 across the remaining lengths. Balanced accuracy
+follows the same broad pattern and reaches 0.691 at 120 seconds. Table~\ref{tab:window-grid}
+shows the complete grid, including the decline in retained window counts as
+length increases.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mean pooled held-out scores across three seeds on the common
+149-session cohort. Window counts are also means across seeds.}
+\label{tab:window-grid}
+\begin{tabular}{rrrr}
+\hline
+Window (s) & Mean windows & Macro F1 & Balanced accuracy \\
+\hline
+20  & 26,422 & 0.596 & 0.599 \\
+40  & 13,099 & 0.625 & 0.626 \\
+60  & 8,657  & 0.643 & 0.643 \\
+80  & 6,435  & 0.652 & 0.652 \\
+100 & 5,107  & 0.668 & 0.666 \\
+120 & 4,217  & 0.693 & 0.691 \\
+140 & 3,580  & 0.682 & 0.679 \\
+160 & 3,105  & 0.669 & 0.667 \\
+180 & 2,733  & 0.675 & 0.673 \\
+200 & 2,439  & 0.669 & 0.667 \\
+220 & 2,196  & 0.665 & 0.663 \\
+240 & 1,997  & 0.662 & 0.660 \\
+\hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:window-classes} shows class F1 at the shortest length, the
+observed peak, and the longest length. Bus is the most difficult class at
+120 seconds despite its improvement across the grid. Train F1 decreases at
+the longest length. These patterns are descriptive and do not establish
+which aspect of longer temporal context caused the changes.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mean class F1 across three seeds at selected window lengths.}
+\label{tab:window-classes}
+\begin{tabular}{rrrr}
+\hline
+Window (s) & Bus F1 & Car F1 & Train F1 \\
+\hline
+20  & 0.358 & 0.745 & 0.684 \\
+120 & 0.540 & 0.818 & 0.722 \\
+240 & 0.513 & 0.808 & 0.664 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Interpretation and limitations}
+The 120-second length has the highest observed mean macro F1 in this grid.
+It requires 120 seconds of sensor history for a first full-window prediction
+and advances in 60-second steps. No on-device latency, energy use, or
+transition-detection delay was measured, so the operational trade-off cannot
+be quantified from these scores.
+
+The seven participants, class concentration, shared sessions across lengths,
+and window-level pooling limit generalization beyond this cohort. Feature
+definitions were informed by earlier Sydney exploration, although model
+hyperparameters were selected on separate data. The peak was selected after
+examining all 12 lengths; it should not be treated as a confirmed optimum.
+An independent participant cohort with the length fixed in advance is needed
+to assess whether the observed peak persists.
+
+\end{document}
