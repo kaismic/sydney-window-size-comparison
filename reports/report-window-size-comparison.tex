@@ -1,0 +1,82 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\title{Sydney Transport Classification: Window Size Comparison}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Summary}
+The highest mean macro F1 in this study was 0.693 at a 120-second window, versus
+0.643 at the 60-second reference setting. The mean paired difference was +0.050,
+but its bootstrap 95\% interval (\(-0.008\) to +0.087) includes zero. The
+120-second setting is the best observed choice in this grid; these results do
+not establish a clear improvement over 60 seconds under the study's resampling
+scheme.
+
+\section*{Study design}
+The frozen Sydney cohort contains 149 bus, car, and train sessions from seven
+participants. Window lengths range from 20 to 240 seconds in 20-second steps,
+with a step of half the window length. A fixed XGBoost model configuration was
+evaluated with seven leave-one-participant-out folds and three random seeds
+(42, 43, and 44), giving 36 size-and-seed runs and 252 model fits. Scores are
+pooled over held-out windows for each seed and then averaged across seeds.
+All window sizes use the same sessions, although the number of windows changes
+with window length.
+
+\section*{Results}
+Figure~\ref{fig:curve} shows that macro F1 rises from 0.596 at 20 seconds to
+its observed maximum at 120 seconds and ends at 0.662 at 240 seconds.
+The dashed line marks the 60-second reference. The selected results in
+Table~\ref{tab:selected} include balanced accuracy as a separate metric.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\linewidth]{../results/window-curve.png}
+  \caption{Mean pooled held-out macro F1 across three seeds by window size.}
+  \label{fig:curve}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Selected mean scores across three seeds.}
+  \label{tab:selected}
+  \begin{tabular}{rrrrr}
+    \toprule
+    Window (s) & Macro F1 & Balanced accuracy & Bus F1 & Mean windows \\
+    \midrule
+    20  & 0.596 & 0.599 & 0.358 & 26,422 \\
+    60  & 0.643 & 0.643 & 0.426 & 8,657 \\
+    120 & 0.693 & 0.691 & 0.540 & 4,217 \\
+    240 & 0.662 & 0.660 & 0.513 & 1,997 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Figure~\ref{fig:paired} compares each window size with 60 seconds using
+seed-matched mean macro F1 differences. Its 95\% intervals use 5,000 paired
+bootstrap draws over seeds, participants, and sessions. The interval for
+120 seconds spans \(-0.008\) to +0.087. At 20 seconds, the mean difference is
+\(-0.047\), with an interval of \(-0.079\) to \(-0.005\). Among the plotted
+comparisons, only the 20-second interval excludes zero.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\linewidth]{../results/paired-vs-60s.png}
+  \caption{Paired mean macro F1 difference versus 60 seconds; error bars show
+  participant/session/seed bootstrap 95\% intervals.}
+  \label{fig:paired}
+\end{figure}
+
+\section*{Interpretation}
+The 120-second window has the strongest observed average score and improves
+bus F1 from 0.426 at 60 seconds to 0.540. Its interval against the reference
+crosses zero, so the observed advantage is uncertain. The results are limited
+to this frozen cohort, fixed model, and window-level evaluation; longer
+windows also yield fewer evaluated examples per session.
+
+\end{document}

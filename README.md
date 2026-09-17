@@ -27,6 +27,12 @@ $env:ALL_TMD_DATA_DIR = 'D:\tmd-data'  # directory containing downloaded_session
 
 `--data-dir`, `--work-dir`, `--results-dir`, and `--n-jobs` override defaults. If `ALL_TMD_DATA_DIR` is unset, the command reads that one setting from `../all-tmd-v2/.env`. `all` runs prepare, run, and report in order. Preparation caches the frozen event data and each window's features under `work/`; completed model runs resume by window and seed under `results/runs/`. An incomplete run directory stops execution for review.
 
-`results/window-curve.csv`, `per-class.csv`, `paired-vs-60s.csv`, `window-curve.png`, and `study-summary.json` are compact deliverables. The paired 95% intervals resample seeds, participants, and sessions with the same draws for each window and the 60-second baseline. Scores are pooled over windows, so window counts differ by size even though session membership is fixed.
+`results/window-curve.csv`, `per-class.csv`, `paired-vs-60s.csv`, `window-curve.png`, `paired-vs-60s.png`, and `study-summary.json` are compact deliverables. The paired 95% intervals resample seeds, participants, and sessions with the same draws for each window and the 60-second baseline. Scores are pooled over windows, so window counts differ by size even though session membership is fixed.
+
+`results/window-curve.png` plots macro F1 against window size; balanced accuracy remains in the CSV and JSON results. The short LaTeX report is `reports/report-window-size-comparison.tex`. To compile it with `pdflatex`, run `cd reports` followed by `pdflatex report-window-size-comparison.tex` so both figures resolve from `../results/`.
+
+## Completed comparison
+
+All 36 size-and-seed runs and 252 LOPO fits completed on the frozen 149-session cohort. The highest mean macro F1 was **0.693 at 120 seconds**, compared with **0.643 at 60 seconds**; balanced accuracy was 0.691 and 0.643, respectively. The mean paired macro F1 difference was +0.050, with a participant/session/seed bootstrap 95% interval of **−0.008 to +0.087**. This interval includes zero. The 20-second setting scored 0.596 macro F1, with a paired difference of −0.047 (95% interval −0.079 to −0.005) versus 60 seconds. Bus F1 rose from 0.426 at 60 seconds to 0.540 at 120 seconds; the class-level tables show the full breakdown.
 
 Run tests with `.\.venv\Scripts\python.exe -m pytest`.

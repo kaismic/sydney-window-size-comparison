@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
+matplotlib_cache = Path(__file__).resolve().parents[1] / "work" / "matplotlib"
+matplotlib_cache.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(matplotlib_cache))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -151,14 +155,25 @@ def report(results_dir: Path) -> dict[str, Any]:
     pd.DataFrame(per_class).to_csv(results_dir / "per-class.csv", index=False)
     pd.DataFrame(paired).to_csv(results_dir / "paired-vs-60s.csv", index=False)
     figure, axis = plt.subplots(figsize=(8, 5))
-    axis.plot([row["window_seconds"] for row in curve], [row["macro_f1_mean"] for row in curve], marker="o", label="Macro F1")
-    axis.plot([row["window_seconds"] for row in curve], [row["balanced_accuracy_mean"] for row in curve], marker="s", label="Balanced accuracy")
+    axis.plot([row["window_seconds"] for row in curve], [row["macro_f1_mean"] for row in curve], marker="o")
     axis.axvline(baseline_window, color="gray", linestyle="--", linewidth=1)
-    axis.set(xlabel="Window size (seconds)", ylabel="Pooled held-out window score", xticks=list(WINDOWS), ylim=(0, 1))
+    axis.set(xlabel="Window size (seconds)", ylabel="Macro F1 (pooled held-out windows)", xticks=list(WINDOWS), ylim=(0, 1))
     axis.grid(alpha=0.3)
-    axis.legend()
     figure.tight_layout()
     figure.savefig(results_dir / "window-curve.png", dpi=180)
+    plt.close(figure)
+    figure, axis = plt.subplots(figsize=(8, 5))
+    differences = np.array([row["macro_f1_difference_mean"] for row in paired])
+    lower_errors = differences - np.array([row["ci_95_lower"] for row in paired])
+    upper_errors = np.array([row["ci_95_upper"] for row in paired]) - differences
+    axis.errorbar(WINDOWS, differences, yerr=[lower_errors, upper_errors], fmt="o", capsize=3)
+    axis.axhline(0, color="gray", linewidth=1)
+    axis.axvline(baseline_window, color="gray", linestyle="--", linewidth=1)
+    axis.set(xlabel="Window size (seconds)", ylabel="Macro F1 difference vs 60 seconds",
+             xticks=list(WINDOWS))
+    axis.grid(alpha=0.3)
+    figure.tight_layout()
+    figure.savefig(results_dir / "paired-vs-60s.png", dpi=180)
     plt.close(figure)
     summary = {
         "schema_version": 1,
