@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from sydney_window_comparison import study
-from sydney_window_comparison.report import _macro_f1, paired_interval
+from sydney_window_comparison.report import _macro_f1, absolute_interval, paired_interval
 from all_tmd.ingest import _is_sydney_collector_session
 from all_tmd.ingest import _duration_filter
 from all_tmd.study import create_lopo_manifest
@@ -117,3 +117,13 @@ def test_paired_interval_identical_predictions_is_zero():
     low, high = paired_interval(by_seed, by_seed, {"p1": ["a", "b"], "p2": ["c"]}, 25, 42)
     assert (low, high) == (0, 0)
     assert _macro_f1(np.eye(3, dtype=int)) == 1
+
+
+def test_absolute_interval_perfect_predictions_is_one():
+    rows = pd.DataFrame([
+        {"session_id": session, "label": label, "prediction": label}
+        for session in ("a", "b", "c") for label in (0, 1, 2)
+    ])
+    by_seed = {seed: rows for seed in study.SEEDS}
+    low, high = absolute_interval(by_seed, {"p1": ["a", "b", "c"]}, 25, 42)
+    assert (low, high) == (1, 1)

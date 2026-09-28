@@ -73,6 +73,34 @@ def paired_interval(
     return float(lower), float(upper)
 
 
+def absolute_interval(
+    predictions: dict[int, pd.DataFrame],
+    participant_sessions: dict[str, list[str]],
+    iterations: int,
+    seed: int,
+) -> tuple[float, float]:
+    """Bootstrap an absolute score over seeds, participants, and sessions."""
+    sessions = [s for ids in participant_sessions.values() for s in ids]
+    indices = {s: i for i, s in enumerate(sessions)}
+    by_participant = [np.array([indices[s] for s in ids]) for ids in participant_sessions.values()]
+    matrices = np.stack([_per_session_matrices(predictions[s], sessions) for s in SEEDS])
+    rng = np.random.default_rng(seed)
+    scores = np.empty(iterations)
+    for iteration in range(iterations):
+        selected_seeds = rng.integers(0, len(SEEDS), len(SEEDS))
+        chosen_participants = rng.integers(0, len(by_participant), len(by_participant))
+        sampled = np.concatenate([
+            rng.choice(by_participant[p], size=len(by_participant[p]), replace=True)
+            for p in chosen_participants
+        ])
+        scores[iteration] = float(np.mean([
+            _macro_f1(matrices[seed_index, sampled].sum(axis=0))
+            for seed_index in selected_seeds
+        ]))
+    lower, upper = np.quantile(scores, [0.025, 0.975])
+    return float(lower), float(upper)
+
+
 def _completed_runs(results_dir: Path, cohort: dict[str, Any], lopo: dict[str, Any]) -> tuple[dict[tuple[int, int], dict[str, Any]], dict[tuple[int, int], pd.DataFrame]]:
     runs = {}
     predictions = {}
@@ -118,6 +146,7 @@ def report(results_dir: Path) -> dict[str, Any]:
         for participant in cohort["participants"]
     }
     curve = []
+    absolute = []
     per_class = []
     paired = []
     for window in WINDOWS:
@@ -133,6 +162,17 @@ def report(results_dir: Path) -> dict[str, Any]:
             "balanced_accuracy_sd": float(np.std(balanced, ddof=1)),
             "windows_mean": float(np.mean([run["metrics"]["rows"] for run in window_runs])),
             "sessions": len(cohort["session_ids"]),
+        })
+        lower, upper = absolute_interval(
+            {seed: predictions[(window, seed)] for seed in SEEDS}, participant_sessions,
+            STUDY["bootstrap_iterations"], STUDY["analysis_seed"] + window,
+        )
+        absolute.append({
+            "window_seconds": window,
+            "macro_f1_mean": float(np.mean(scores)),
+            "ci_95_lower": lower,
+            "ci_95_upper": upper,
+            "bootstrap_iterations": STUDY["bootstrap_iterations"],
         })
         for mode in LABELS:
             per_class.append({
@@ -152,6 +192,7 @@ def report(results_dir: Path) -> dict[str, Any]:
                        "ci_95_lower": lower, "ci_95_upper": upper})
     results_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(curve).to_csv(results_dir / "window-curve.csv", index=False)
+    pd.DataFrame(absolute).to_csv(results_dir / "absolute-macro-f1.csv", index=False)
     pd.DataFrame(per_class).to_csv(results_dir / "per-class.csv", index=False)
     pd.DataFrame(paired).to_csv(results_dir / "paired-vs-60s.csv", index=False)
     figure, axis = plt.subplots(figsize=(8, 5))
@@ -160,6 +201,18 @@ def report(results_dir: Path) -> dict[str, Any]:
     axis.grid(alpha=0.3)
     figure.tight_layout()
     figure.savefig(results_dir / "window-curve.png", dpi=180)
+    plt.close(figure)
+    figure, axis = plt.subplots(figsize=(8, 5))
+    absolute_means = np.array([row["macro_f1_mean"] for row in absolute])
+    lower_errors = absolute_means - np.array([row["ci_95_lower"] for row in absolute])
+    upper_errors = np.array([row["ci_95_upper"] for row in absolute]) - absolute_means
+    axis.errorbar(WINDOWS, absolute_means, yerr=[lower_errors, upper_errors], fmt="o", capsize=3)
+    axis.set(xlabel="Window size (seconds)",
+             ylabel="Macro F1 mean (95% bootstrap interval; 5,000 draws)",
+             xticks=list(WINDOWS), ylim=(0, 1))
+    axis.grid(alpha=0.3)
+    figure.tight_layout()
+    figure.savefig(results_dir / "absolute-macro-f1.png", dpi=180)
     plt.close(figure)
     figure, axis = plt.subplots(figsize=(8, 5))
     differences = np.array([row["macro_f1_difference_mean"] for row in paired])
@@ -189,6 +242,7 @@ def report(results_dir: Path) -> dict[str, Any]:
         "grid_digest": canonical_digest([run["identity"] for run in runs.values()]),
         "best_macro_f1_window_seconds": max(curve, key=lambda row: row["macro_f1_mean"])["window_seconds"],
         "curve": curve,
+        "absolute_macro_f1": absolute,
         "paired_vs_60s": paired,
         "bootstrap_iterations": STUDY["bootstrap_iterations"],
     }
