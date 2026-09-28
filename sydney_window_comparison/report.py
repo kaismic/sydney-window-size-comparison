@@ -182,6 +182,22 @@ def save_combined_window_figure(
     plt.close(figure)
 
 
+def save_combined_absolute_metrics_figure(
+    absolute_macro_f1: list[dict[str, Any]],
+    absolute_balanced_accuracy: list[dict[str, Any]],
+    output_path: Path,
+) -> None:
+    """Save absolute macro F1 above balanced accuracy in one figure."""
+    figure, axes = plt.subplots(2, 1, figsize=(8, 10))
+    _plot_absolute_macro_f1(axes[0], absolute_macro_f1)
+    axes[0].set_title("(a) Macro F1")
+    _plot_absolute_balanced_accuracy(axes[1], absolute_balanced_accuracy)
+    axes[1].set_title("(b) Balanced accuracy")
+    figure.tight_layout()
+    figure.savefig(output_path, dpi=180)
+    plt.close(figure)
+
+
 def _completed_runs(results_dir: Path, cohort: dict[str, Any], lopo: dict[str, Any]) -> tuple[dict[tuple[int, int], dict[str, Any]], dict[tuple[int, int], pd.DataFrame]]:
     runs = {}
     predictions = {}
@@ -305,6 +321,9 @@ def report(results_dir: Path) -> dict[str, Any]:
     figure.tight_layout()
     figure.savefig(results_dir / "absolute-balanced-accuracy.png", dpi=180)
     plt.close(figure)
+    save_combined_absolute_metrics_figure(
+        absolute, absolute_balanced, results_dir / "absolute-metrics-combined.png",
+    )
     save_combined_window_figure(curve, absolute, results_dir / "window-curve-combined.png")
     figure, axis = plt.subplots(figsize=(8, 5))
     differences = np.array([row["macro_f1_difference_mean"] for row in paired])

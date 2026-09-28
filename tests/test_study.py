@@ -14,6 +14,7 @@ from sydney_window_comparison.report import (
     absolute_interval,
     balanced_accuracy_interval,
     paired_interval,
+    save_combined_absolute_metrics_figure,
     save_combined_window_figure,
 )
 from all_tmd.ingest import _is_sydney_collector_session
@@ -159,6 +160,27 @@ def test_combined_window_figure_is_wider_than_tall(tmp_path):
 
     image = mpimg.imread(output)
     assert image.shape[1] > image.shape[0]
+
+
+def test_combined_absolute_metrics_figure_is_taller_than_wide(tmp_path):
+    absolute_macro_f1 = [
+        {"window_seconds": window, "macro_f1_mean": 0.6,
+         "ci_95_lower": 0.5, "ci_95_upper": 0.7}
+        for window in study.WINDOWS
+    ]
+    absolute_balanced_accuracy = [
+        {"window_seconds": window, "balanced_accuracy_mean": 0.6,
+         "ci_95_lower": 0.5, "ci_95_upper": 0.7}
+        for window in study.WINDOWS
+    ]
+    output = tmp_path / "combined-absolute.png"
+
+    save_combined_absolute_metrics_figure(
+        absolute_macro_f1, absolute_balanced_accuracy, output,
+    )
+
+    image = mpimg.imread(output)
+    assert image.shape[0] > image.shape[1]
 
 
 def test_absolute_plot_uses_translucent_interval_band():
