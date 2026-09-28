@@ -101,6 +101,41 @@ def absolute_interval(
     return float(lower), float(upper)
 
 
+def _plot_window_curve(axis: Any, curve: list[dict[str, Any]]) -> None:
+    axis.plot([row["window_seconds"] for row in curve],
+              [row["macro_f1_mean"] for row in curve], marker="o")
+    axis.set(xlabel="Window size (seconds)", ylabel="Macro F1 (pooled held-out windows)",
+             xticks=list(WINDOWS), ylim=(0, 1))
+    axis.grid(alpha=0.3)
+
+
+def _plot_absolute_macro_f1(axis: Any, absolute: list[dict[str, Any]]) -> None:
+    means = np.array([row["macro_f1_mean"] for row in absolute])
+    lower_errors = means - np.array([row["ci_95_lower"] for row in absolute])
+    upper_errors = np.array([row["ci_95_upper"] for row in absolute]) - means
+    axis.errorbar(WINDOWS, means, yerr=[lower_errors, upper_errors], fmt="o", capsize=3)
+    axis.set(xlabel="Window size (seconds)",
+             ylabel="Macro F1 mean (95% bootstrap interval; 5,000 draws)",
+             xticks=list(WINDOWS), ylim=(0, 1))
+    axis.grid(alpha=0.3)
+
+
+def save_combined_window_figure(
+    curve: list[dict[str, Any]],
+    absolute: list[dict[str, Any]],
+    output_path: Path,
+) -> None:
+    """Save the window curve and absolute bootstrap plot as side-by-side panels."""
+    figure, axes = plt.subplots(1, 2, figsize=(16, 5))
+    _plot_window_curve(axes[0], curve)
+    axes[0].set_title("(a) Mean macro F1")
+    _plot_absolute_macro_f1(axes[1], absolute)
+    axes[1].set_title("(b) Mean macro F1 with bootstrap interval")
+    figure.tight_layout()
+    figure.savefig(output_path, dpi=180)
+    plt.close(figure)
+
+
 def _completed_runs(results_dir: Path, cohort: dict[str, Any], lopo: dict[str, Any]) -> tuple[dict[tuple[int, int], dict[str, Any]], dict[tuple[int, int], pd.DataFrame]]:
     runs = {}
     predictions = {}
@@ -196,24 +231,16 @@ def report(results_dir: Path) -> dict[str, Any]:
     pd.DataFrame(per_class).to_csv(results_dir / "per-class.csv", index=False)
     pd.DataFrame(paired).to_csv(results_dir / "paired-vs-60s.csv", index=False)
     figure, axis = plt.subplots(figsize=(8, 5))
-    axis.plot([row["window_seconds"] for row in curve], [row["macro_f1_mean"] for row in curve], marker="o")
-    axis.set(xlabel="Window size (seconds)", ylabel="Macro F1 (pooled held-out windows)", xticks=list(WINDOWS), ylim=(0, 1))
-    axis.grid(alpha=0.3)
+    _plot_window_curve(axis, curve)
     figure.tight_layout()
     figure.savefig(results_dir / "window-curve.png", dpi=180)
     plt.close(figure)
     figure, axis = plt.subplots(figsize=(8, 5))
-    absolute_means = np.array([row["macro_f1_mean"] for row in absolute])
-    lower_errors = absolute_means - np.array([row["ci_95_lower"] for row in absolute])
-    upper_errors = np.array([row["ci_95_upper"] for row in absolute]) - absolute_means
-    axis.errorbar(WINDOWS, absolute_means, yerr=[lower_errors, upper_errors], fmt="o", capsize=3)
-    axis.set(xlabel="Window size (seconds)",
-             ylabel="Macro F1 mean (95% bootstrap interval; 5,000 draws)",
-             xticks=list(WINDOWS), ylim=(0, 1))
-    axis.grid(alpha=0.3)
+    _plot_absolute_macro_f1(axis, absolute)
     figure.tight_layout()
     figure.savefig(results_dir / "absolute-macro-f1.png", dpi=180)
     plt.close(figure)
+    save_combined_window_figure(curve, absolute, results_dir / "window-curve-combined.png")
     figure, axis = plt.subplots(figsize=(8, 5))
     differences = np.array([row["macro_f1_difference_mean"] for row in paired])
     lower_errors = differences - np.array([row["ci_95_lower"] for row in paired])

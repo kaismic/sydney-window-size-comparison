@@ -1,10 +1,16 @@
 import json
+import matplotlib.image as mpimg
 import numpy as np
 import pandas as pd
 import pytest
 
 from sydney_window_comparison import study
-from sydney_window_comparison.report import _macro_f1, absolute_interval, paired_interval
+from sydney_window_comparison.report import (
+    _macro_f1,
+    absolute_interval,
+    paired_interval,
+    save_combined_window_figure,
+)
 from all_tmd.ingest import _is_sydney_collector_session
 from all_tmd.ingest import _duration_filter
 from all_tmd.study import create_lopo_manifest
@@ -127,3 +133,21 @@ def test_absolute_interval_perfect_predictions_is_one():
     by_seed = {seed: rows for seed in study.SEEDS}
     low, high = absolute_interval(by_seed, {"p1": ["a", "b", "c"]}, 25, 42)
     assert (low, high) == (1, 1)
+
+
+def test_combined_window_figure_is_wider_than_tall(tmp_path):
+    curve = [
+        {"window_seconds": window, "macro_f1_mean": 0.6}
+        for window in study.WINDOWS
+    ]
+    absolute = [
+        {"window_seconds": window, "macro_f1_mean": 0.6,
+         "ci_95_lower": 0.5, "ci_95_upper": 0.7}
+        for window in study.WINDOWS
+    ]
+    output = tmp_path / "combined.png"
+
+    save_combined_window_figure(curve, absolute, output)
+
+    image = mpimg.imread(output)
+    assert image.shape[1] > image.shape[0]
