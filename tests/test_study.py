@@ -8,9 +8,11 @@ import pytest
 
 from sydney_window_comparison import study
 from sydney_window_comparison.report import (
+    _balanced_accuracy,
     _macro_f1,
     _plot_absolute_macro_f1,
     absolute_interval,
+    balanced_accuracy_interval,
     paired_interval,
     save_combined_window_figure,
 )
@@ -128,7 +130,7 @@ def test_paired_interval_identical_predictions_is_zero():
     assert _macro_f1(np.eye(3, dtype=int)) == 1
 
 
-def test_absolute_interval_perfect_predictions_is_one():
+def test_absolute_intervals_perfect_predictions_are_one():
     rows = pd.DataFrame([
         {"session_id": session, "label": label, "prediction": label}
         for session in ("a", "b", "c") for label in (0, 1, 2)
@@ -136,6 +138,9 @@ def test_absolute_interval_perfect_predictions_is_one():
     by_seed = {seed: rows for seed in study.SEEDS}
     low, high = absolute_interval(by_seed, {"p1": ["a", "b", "c"]}, 25, 42)
     assert (low, high) == (1, 1)
+    low, high = balanced_accuracy_interval(by_seed, {"p1": ["a", "b", "c"]}, 25, 42)
+    assert (low, high) == (1, 1)
+    assert _balanced_accuracy(np.eye(3, dtype=int)) == 1
 
 
 def test_combined_window_figure_is_wider_than_tall(tmp_path):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,12 @@ def _macro_f1(matrix: np.ndarray) -> float:
     denominator = support + predicted
     return float(np.mean(np.divide(2 * diagonal, denominator,
                                    out=np.zeros(3, dtype=float), where=denominator != 0)))
+
+
+def _balanced_accuracy(matrix: np.ndarray) -> float:
+    support = matrix.sum(axis=1)
+    return float(np.mean(np.divide(np.diag(matrix), support,
+                                   out=np.zeros(3, dtype=float), where=support != 0)))
 
 
 def _per_session_matrices(predictions: pd.DataFrame, sessions: list[str]) -> np.ndarray:
@@ -73,11 +80,12 @@ def paired_interval(
     return float(lower), float(upper)
 
 
-def absolute_interval(
+def _absolute_score_interval(
     predictions: dict[int, pd.DataFrame],
     participant_sessions: dict[str, list[str]],
     iterations: int,
     seed: int,
+    score: Callable[[np.ndarray], float],
 ) -> tuple[float, float]:
     """Bootstrap an absolute score over seeds, participants, and sessions."""
     sessions = [s for ids in participant_sessions.values() for s in ids]
@@ -94,11 +102,35 @@ def absolute_interval(
             for p in chosen_participants
         ])
         scores[iteration] = float(np.mean([
-            _macro_f1(matrices[seed_index, sampled].sum(axis=0))
+            score(matrices[seed_index, sampled].sum(axis=0))
             for seed_index in selected_seeds
         ]))
     lower, upper = np.quantile(scores, [0.025, 0.975])
     return float(lower), float(upper)
+
+
+def absolute_interval(
+    predictions: dict[int, pd.DataFrame],
+    participant_sessions: dict[str, list[str]],
+    iterations: int,
+    seed: int,
+) -> tuple[float, float]:
+    """Bootstrap absolute macro F1 over seeds, participants, and sessions."""
+    return _absolute_score_interval(
+        predictions, participant_sessions, iterations, seed, _macro_f1,
+    )
+
+
+def balanced_accuracy_interval(
+    predictions: dict[int, pd.DataFrame],
+    participant_sessions: dict[str, list[str]],
+    iterations: int,
+    seed: int,
+) -> tuple[float, float]:
+    """Bootstrap absolute balanced accuracy over seeds, participants, and sessions."""
+    return _absolute_score_interval(
+        predictions, participant_sessions, iterations, seed, _balanced_accuracy,
+    )
 
 
 def _plot_window_curve(axis: Any, curve: list[dict[str, Any]]) -> None:
@@ -109,16 +141,29 @@ def _plot_window_curve(axis: Any, curve: list[dict[str, Any]]) -> None:
     axis.grid(alpha=0.3)
 
 
-def _plot_absolute_macro_f1(axis: Any, absolute: list[dict[str, Any]]) -> None:
-    means = np.array([row["macro_f1_mean"] for row in absolute])
+def _plot_absolute_score(
+    axis: Any,
+    absolute: list[dict[str, Any]],
+    mean_key: str,
+    metric_label: str,
+) -> None:
+    means = np.array([row[mean_key] for row in absolute])
     lower = np.array([row["ci_95_lower"] for row in absolute])
     upper = np.array([row["ci_95_upper"] for row in absolute])
     axis.plot(WINDOWS, means, marker="o")
     axis.fill_between(WINDOWS, lower, upper, alpha=0.18)
     axis.set(xlabel="Window size (seconds)",
-             ylabel="Macro F1 mean (95% bootstrap interval; 5,000 draws)",
+             ylabel=f"{metric_label} mean (95% bootstrap interval; 5,000 draws)",
              xticks=list(WINDOWS), ylim=(0, 1))
     axis.grid(alpha=0.3)
+
+
+def _plot_absolute_macro_f1(axis: Any, absolute: list[dict[str, Any]]) -> None:
+    _plot_absolute_score(axis, absolute, "macro_f1_mean", "Macro F1")
+
+
+def _plot_absolute_balanced_accuracy(axis: Any, absolute: list[dict[str, Any]]) -> None:
+    _plot_absolute_score(axis, absolute, "balanced_accuracy_mean", "Balanced accuracy")
 
 
 def save_combined_window_figure(
@@ -183,6 +228,7 @@ def report(results_dir: Path) -> dict[str, Any]:
     }
     curve = []
     absolute = []
+    absolute_balanced = []
     per_class = []
     paired = []
     for window in WINDOWS:
@@ -199,13 +245,25 @@ def report(results_dir: Path) -> dict[str, Any]:
             "windows_mean": float(np.mean([run["metrics"]["rows"] for run in window_runs])),
             "sessions": len(cohort["session_ids"]),
         })
+        window_predictions = {seed: predictions[(window, seed)] for seed in SEEDS}
         lower, upper = absolute_interval(
-            {seed: predictions[(window, seed)] for seed in SEEDS}, participant_sessions,
+            window_predictions, participant_sessions,
             STUDY["bootstrap_iterations"], STUDY["analysis_seed"] + window,
         )
         absolute.append({
             "window_seconds": window,
             "macro_f1_mean": float(np.mean(scores)),
+            "ci_95_lower": lower,
+            "ci_95_upper": upper,
+            "bootstrap_iterations": STUDY["bootstrap_iterations"],
+        })
+        lower, upper = balanced_accuracy_interval(
+            window_predictions, participant_sessions,
+            STUDY["bootstrap_iterations"], STUDY["analysis_seed"] + window,
+        )
+        absolute_balanced.append({
+            "window_seconds": window,
+            "balanced_accuracy_mean": float(np.mean(balanced)),
             "ci_95_lower": lower,
             "ci_95_upper": upper,
             "bootstrap_iterations": STUDY["bootstrap_iterations"],
@@ -229,6 +287,7 @@ def report(results_dir: Path) -> dict[str, Any]:
     results_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(curve).to_csv(results_dir / "window-curve.csv", index=False)
     pd.DataFrame(absolute).to_csv(results_dir / "absolute-macro-f1.csv", index=False)
+    pd.DataFrame(absolute_balanced).to_csv(results_dir / "absolute-balanced-accuracy.csv", index=False)
     pd.DataFrame(per_class).to_csv(results_dir / "per-class.csv", index=False)
     pd.DataFrame(paired).to_csv(results_dir / "paired-vs-60s.csv", index=False)
     figure, axis = plt.subplots(figsize=(8, 5))
@@ -240,6 +299,11 @@ def report(results_dir: Path) -> dict[str, Any]:
     _plot_absolute_macro_f1(axis, absolute)
     figure.tight_layout()
     figure.savefig(results_dir / "absolute-macro-f1.png", dpi=180)
+    plt.close(figure)
+    figure, axis = plt.subplots(figsize=(8, 5))
+    _plot_absolute_balanced_accuracy(axis, absolute_balanced)
+    figure.tight_layout()
+    figure.savefig(results_dir / "absolute-balanced-accuracy.png", dpi=180)
     plt.close(figure)
     save_combined_window_figure(curve, absolute, results_dir / "window-curve-combined.png")
     figure, axis = plt.subplots(figsize=(8, 5))
@@ -271,6 +335,7 @@ def report(results_dir: Path) -> dict[str, Any]:
         "best_macro_f1_window_seconds": max(curve, key=lambda row: row["macro_f1_mean"])["window_seconds"],
         "curve": curve,
         "absolute_macro_f1": absolute,
+        "absolute_balanced_accuracy": absolute_balanced,
         "paired_vs_60s": paired,
         "bootstrap_iterations": STUDY["bootstrap_iterations"],
     }
