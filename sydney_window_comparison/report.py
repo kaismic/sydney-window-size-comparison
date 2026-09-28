@@ -111,9 +111,10 @@ def _plot_window_curve(axis: Any, curve: list[dict[str, Any]]) -> None:
 
 def _plot_absolute_macro_f1(axis: Any, absolute: list[dict[str, Any]]) -> None:
     means = np.array([row["macro_f1_mean"] for row in absolute])
-    lower_errors = means - np.array([row["ci_95_lower"] for row in absolute])
-    upper_errors = np.array([row["ci_95_upper"] for row in absolute]) - means
-    axis.errorbar(WINDOWS, means, yerr=[lower_errors, upper_errors], fmt="o", capsize=3)
+    lower = np.array([row["ci_95_lower"] for row in absolute])
+    upper = np.array([row["ci_95_upper"] for row in absolute])
+    axis.plot(WINDOWS, means, marker="o")
+    axis.fill_between(WINDOWS, lower, upper, alpha=0.18)
     axis.set(xlabel="Window size (seconds)",
              ylabel="Macro F1 mean (95% bootstrap interval; 5,000 draws)",
              xticks=list(WINDOWS), ylim=(0, 1))

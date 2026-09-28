@@ -1,4 +1,6 @@
 import json
+from unittest.mock import Mock
+
 import matplotlib.image as mpimg
 import numpy as np
 import pandas as pd
@@ -7,6 +9,7 @@ import pytest
 from sydney_window_comparison import study
 from sydney_window_comparison.report import (
     _macro_f1,
+    _plot_absolute_macro_f1,
     absolute_interval,
     paired_interval,
     save_combined_window_figure,
@@ -151,3 +154,21 @@ def test_combined_window_figure_is_wider_than_tall(tmp_path):
 
     image = mpimg.imread(output)
     assert image.shape[1] > image.shape[0]
+
+
+def test_absolute_plot_uses_translucent_interval_band():
+    absolute = [
+        {"window_seconds": window, "macro_f1_mean": 0.6,
+         "ci_95_lower": 0.5, "ci_95_upper": 0.7}
+        for window in study.WINDOWS
+    ]
+    axis = Mock()
+
+    _plot_absolute_macro_f1(axis, absolute)
+
+    axis.plot.assert_called_once()
+    axis.errorbar.assert_not_called()
+    axis.fill_between.assert_called_once()
+    assert axis.fill_between.call_args.kwargs == {"alpha": 0.18}
+    np.testing.assert_array_equal(axis.fill_between.call_args.args[1], np.full(12, 0.5))
+    np.testing.assert_array_equal(axis.fill_between.call_args.args[2], np.full(12, 0.7))
